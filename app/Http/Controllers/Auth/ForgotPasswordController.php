@@ -13,6 +13,7 @@ use Carbon\Carbon;
 class ForgotPasswordController extends Controller
 {
     // Send OTP to the verified email
+    // Send OTP to the verified email
     public function sendOtp(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -36,11 +37,11 @@ class ForgotPasswordController extends Controller
             ]
         );
 
-        Mail::to('finalproject123654@gmail.com')->send(new SendOtpMail($otp));
+        // 🚀 التعديل السحري: إرسال الـ OTP للمتغير $email الذي تم إدخاله في الشاشة
+        Mail::to($email)->send(new SendOtpMail($otp));
 
         return response()->json(['message' => 'OTP code has been sent successfully to your email.']);
     }
-
     // Verify the provided OTP code
     public function verifyOtp(Request $request)
     {

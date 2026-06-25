@@ -220,7 +220,7 @@ def _send_log_async(payload: dict) -> None:
     def _worker():
         try:
 
-            api_url = "http://127.0.0.1:8000/api/internal/log-alert"
+            api_url = "http://127.0.0.1/api/internal/log-alert"
             
 
             resp = requests.post(
