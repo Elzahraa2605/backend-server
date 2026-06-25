@@ -1,0 +1,172 @@
+{
+  "blocked_app_categories": [
+    {
+      "category": "social",
+      "apps": [
+        {
+          "name": "Facebook",
+          "package": "com.facebook.katana",
+          "domains": [
+            "facebook.com",
+            "fb.com",
+            "fbcdn.net",
+            "m.facebook.com",
+            "messenger.com",
+            "connect.facebook.net"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "TikTok",
+          "package": "com.zhiliaoapp.musically",
+          "domains": [
+            "tiktok.com",
+            "v.tiktok.com",
+            "tiktokv.com",
+            "musical.ly",
+            "tiktokcdn.com",
+            "byteoversea.com"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Instagram",
+          "package": "com.instagram.android",
+          "domains": [
+            "instagram.com",
+            "cdninstagram.com",
+            "instagr.am",
+            "threads.net"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Snapchat",
+          "package": "com.snapchat.android",
+          "domains": [
+            "snapchat.com",
+            "snap.com",
+            "kit.snapchat.com"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "X (Twitter)",
+          "package": "com.twitter.android",
+          "domains": [
+            "twitter.com",
+            "x.com",
+            "t.co",
+            "twimg.com",
+            "periscope.tv"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "YouTube",
+          "package": "com.google.android.youtube",
+          "domains": [
+            "youtube.com",
+            "m.youtube.com",
+            "youtu.be",
+            "ytimg.com",
+            "googlevideo.com",
+            "youtubeembeddedplayer.googleapis.com"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Telegram",
+          "package": "org.telegram.messenger",
+          "domains": [
+            "telegram.org",
+            "web.telegram.org",
+            "t.me",
+            "telegram.me",
+            "tg.dev"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Discord",
+          "package": "com.discord",
+          "domains": [
+            "discord.com",
+            "discord.gg",
+            "discordapp.com",
+            "discordapp.net"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Reddit",
+          "package": "com.reddit.frontpage",
+          "domains": [
+            "reddit.com",
+            "redd.it",
+            "redditmedia.com",
+            "redditstatic.com"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Twitch",
+          "package": "tv.twitch.android.app",
+          "domains": [
+            "twitch.tv",
+            "ttvnw.net",
+            "jtvnw.net"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Pinterest",
+          "package": "com.pinterest",
+          "domains": [
+            "pinterest.com",
+            "pinimg.com",
+            "pinterest.co.uk"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "WhatsApp",
+          "package": "com.whatsapp",
+          "domains": [
+            "whatsapp.com",
+            "web.whatsapp.com",
+            "wa.me"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Kwai",
+          "package": "com.kwai.video",
+          "domains": [
+            "kwai.com",
+            "kuaishou.com"
+          ],
+          "category": "social"
+        },
+        {
+          "name": "Roblox Web Community",
+          "package": "com.roblox.client",
+          "domains": [
+            "roblox.com",
+            "rbxcdn.com"
+          ],
+          "category": "social"
+        }
+      ]
+    }
+  ],
+  "blocked_download_types": [
+    "exe",
+    "apk",
+    "bat",
+    "msi",
+    "jar"
+  ],
+  "virustotal_api_key": "4e5754649bb6b8643b1b6718e27390138805e4950a196aeeb29352c7b3913e9d"
+}
+ 

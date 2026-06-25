@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('child_alerts', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->char('uuid', 36)->unique();
+            $table->unsignedBigInteger('parent_id');
+            $table->unsignedBigInteger('child_id')->nullable();
+            $table->string('type');
+            $table->string('title');
+            $table->text('message');
+            $table->boolean('is_read')->default(false);
+            $table->boolean('notification_sent')->default(false);
+            $table->string('notification_type')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('child_alerts');
+    }
+};
