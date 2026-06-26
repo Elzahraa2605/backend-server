@@ -13,7 +13,6 @@ class AlertController extends Controller
 {
    public function index(Request $request)
 {
-    // القراءة المباشرة من جدول child_alerts للأب رقم 1 
     $parentId = 1; 
 
     // حذف التنبيهات التي مر عليها أكثر من 7 أيام
@@ -21,12 +20,15 @@ class AlertController extends Controller
         ->where('created_at', '<', \Carbon\Carbon::now()->subDays(7))
         ->delete();
 
-    // 🎯 التعديل السحري: نجهز الاستعلام الأساسي للأب
     $query = Alert::where('parent_id', $parentId);
 
-    // 🔍 الفلترة الذكية: إذا كان الفرونت إيند باعت child_id، نرجع إشعارات الطفل ده بس بالملي
-    if ($request->has('child_id') && $request->child_id != null) {
-        $query->where('child_id', $request->child_id);
+    // 🎯 إذا بعتنا child_id يساوي "null" كـ نص أو فاضي، نرجع فقط الإشعارات الخاصة بالرضيع (التي قيمتها null في الداتابيز)
+    if ($request->has('child_id')) {
+        if ($request->child_id === 'null' || $request->child_id == null) {
+            $query->whereNull('child_id'); // 🔥 يرجع إشعارات الرضيع فقط!
+        } else {
+            $query->where('child_id', $request->child_id); // يرجع إشعارات الطفل المحدد
+        }
     }
 
     $alerts = $query->orderBy('created_at', 'desc')->get();
