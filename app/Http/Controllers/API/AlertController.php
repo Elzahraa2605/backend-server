@@ -21,7 +21,13 @@ class AlertController extends Controller
         ->where('created_at', '<', \Carbon\Carbon::now()->subDays(7))
         ->delete();
 
+    // 🎯 التعديل السحري: نجهز الاستعلام الأساسي للأب
     $query = Alert::where('parent_id', $parentId);
+
+    // 🔍 الفلترة الذكية: إذا كان الفرونت إيند باعت child_id، نرجع إشعارات الطفل ده بس بالملي
+    if ($request->has('child_id') && $request->child_id != null) {
+        $query->where('child_id', $request->child_id);
+    }
 
     $alerts = $query->orderBy('created_at', 'desc')->get();
 
