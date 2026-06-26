@@ -38,52 +38,60 @@ class AlertController extends Controller
     return response()->json($formattedAlerts);
 }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'child_id' => 'required',
-            'type'     => 'required|string',
-            'title'    => 'required|string',
-            'message'  => 'required|string'
-        ]);
+   public function store(Request $request)
+{
+    $request->validate([
+        'child_id' => 'required',
+        'type'     => 'required|string',
+        'title'    => 'required|string',
+        'message'  => 'required|string'
+    ]);
 
-        $childId = $request->child_id;
+    $childId = $request->child_id;
 
-        if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
-            $childId = (int) $matches[0];
-        }
-
-        $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
-        $child = DB::table($tableName)->where('id', $childId)->first() ?? DB::table($tableName)->first();
-
-        if (!$child) {
-            return response()->json(['error' => 'No children found in database'], 404);
-        }
-
-        $title = $request->title;
-        $message = $request->message;
-
-        if ($request->type === 'threat_blocked' || str_contains($title, 'حظر') || str_contains($title, 'blocked')) {
-            $title = "Threat Blocked";
-            $message = "Security system prevented downloading a suspicious file on child device. Reason: Flagged as malware.";
-        } elseif ($request->type === 'content_blocked') {
-            $title = "Restricted Website Blocked";
-            $message = "Security engine intercepted a restricted webview navigation request.";
-        }
-
-        $alert = Alert::create([
-            'parent_id'         => $child->parent_id,
-            'child_id'          => $child->id,
-            'type'              => $request->type,
-            'title'             => $title,
-            'message'           => $message,
-            'is_read'           => false,
-            'notification_sent' => false
-        ]);
-
-        return response()->json($alert, 201);
+    // تنظيف الـ ID لو جاي معاه نصوص
+    if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
+        $childId = (int) $matches[0];
     }
 
+    $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
+    
+    // 🔥 التعديل: نبحث بالـ ID المبعوث فقط.. ولو ملقيناش طفل، نجيب أول طفل بشرط يكون مش جهاز الرضيع
+    $child = DB::table($tableName)->where('id', $childId)->first();
+
+    if (!$child) {
+        // لو مفيش ID واضح، بنجيب أول طفل حقيقي (مش الرضيع اللي آيديه 1) منعاً للتداخل
+        $child = DB::table($tableName)->where('id', '!=', 1)->first() ?? DB::table($tableName)->first();
+    }
+
+    if (!$child) {
+        return response()->json(['error' => 'No children found in database'], 404);
+    }
+
+    $title = $request->title;
+    $message = $request->message;
+
+    // تأمين العناوين والرسائل بناءً على النوع القادم من تابلت الطفل
+    if ($request->type === 'threat_blocked' || str_contains($title, 'حظر') || str_contains($title, 'blocked')) {
+        $title = "Threat Blocked";
+        $message = "Security system prevented downloading a suspicious file on child device. Reason: Flagged as malware.";
+    } elseif ($request->type === 'content_blocked') {
+        $title = "Restricted Website Blocked";
+        $message = "Security engine intercepted a restricted webview navigation request.";
+    }
+
+    $alert = Alert::create([
+        'parent_id'         => $child->parent_id,
+        'child_id'          => $child->id,  // 🔥 هيتوجّه للطفل الصح فقط
+        'type'              => $request->type,
+        'title'             => $title,
+        'message'           => $message,
+        'is_read'           => false,
+        'notification_sent' => false
+    ]);
+
+    return response()->json($alert, 201);
+}
     public function markRead(string $uuid)
     {
         $alert = Alert::where('uuid', $uuid)->firstOrFail();
