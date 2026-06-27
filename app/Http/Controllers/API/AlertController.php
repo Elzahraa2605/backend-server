@@ -28,8 +28,9 @@ class AlertController extends Controller
     }
 
     // 🎯 المرونة الكاملة للموبايل الحقيقي: يجيب آخر 24 ساعة مطلقاً لتفادي تعارض التوقيت
+    // 🎯 الحل الأقوى: مقارنة تاريخ اليوم فقط بدون حساب الساعات لتفادي مشاكل الـ Timezone تماماً
     if ($request->has('range') && $request->range === 'today') {
-        $query->where('created_at', '>=', \Carbon\Carbon::now()->subHours(24));
+        $query->whereDate('created_at', \Carbon\Carbon::today('Africa/Cairo'));
     }
 
     $alerts = $query->orderBy('created_at', 'desc')->get();
