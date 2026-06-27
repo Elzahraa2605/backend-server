@@ -207,15 +207,20 @@ class ChildManagementController extends Controller
         if ($validated['status'] === 'approved') {
             try {
                 // 🌟 جعل الحظر 0 صراحة لضمان معالجة دقيقة في الأندرويد لفك الحظر اللحظي
-                DB::table('child_apps')
-                    ->where('child_id', $appRequest->child_id)
-                    ->where('package_name', $appRequest->package_name)
-                    ->update([
+                // 🎯 التعديل الصحيح (يحدث لو موجود، وينشئ السطر فوراً لو مش موجود):
+                DB::table('child_apps')->updateOrInsert(
+                    [
+                        'child_id'     => $appRequest->child_id,
+                        'package_name' => $appRequest->package_name
+                    ],
+                    [
+                        'app_name'   => $appRequest->app_name ?? 'Unknown App',
+                        'app_icon'   => "https://logos.unbxd.io/packages/{$appRequest->package_name}/icon.png", // رابط الأيقونة الحقيقية
                         'is_blocked' => 0, 
                         'status'     => 'allowed', 
                         'updated_at' => now()
-                    ]);
-
+                    ]
+                );
                 // ⚡ ميزة إضافية: مسح أو إلغاء أي طلبات تكرارية معلقة لنفس الحزمة لضمان نظافة لوحة التحكم
                 DB::table('app_requests')
                     ->where('child_id', $appRequest->child_id)
