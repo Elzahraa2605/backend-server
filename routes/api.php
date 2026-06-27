@@ -92,7 +92,6 @@ Route::prefix('parent')->group(function () {
         });
 
         Route::get('reports/app-usage/{child_id}', [AppUsageController::class, 'getChildUsageForParent']);
-        Route::post('usage/sync-bulk', [AppUsageController::class, 'syncBulk']);
         Route::get('child-device-apps/{child_id?}', [ChildAppController::class, 'index']);
         Route::patch('child-apps/update/{id}', [ChildAppController::class, 'update']);
 
@@ -102,6 +101,9 @@ Route::prefix('parent')->group(function () {
         });
     });
 });
+
+Route::middleware(['auth:child'])->post('/parent/usage/sync-bulk', [AppUsageController::class, 'syncBulk']);
+
 
 Route::prefix('child')->group(function () {
     Route::post('login', [ChildAuthController::class, 'login']);
