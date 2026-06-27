@@ -52,9 +52,9 @@ class ChildAppController extends Controller
                     $fileKeyByIndex = 'icon_' . $index;
 
                 
+                    // 🎯 التعديل الجديد والمحمي لمنع الـ null نهائياً:
                     if ($request->hasFile($fileKeyByPackage)) {
                         $path = $request->file($fileKeyByPackage)->store('app_icons/' . $childId, 'public');
-                        // التعديل: توليد رابط مطلق متوافق مع بورت التشغيل الفعلي
                         $iconPath = Storage::disk('public')->url($path); 
                     } 
                     elseif ($request->hasFile($fileKeyByIndex)) {
@@ -62,8 +62,12 @@ class ChildAppController extends Controller
                         $iconPath = Storage::disk('public')->url($path);
                     }
                     elseif ($request->hasFile($packageName)) {
-                        $path = $request->file($packageName)->store('app_icons/' . $childId, $disk);
+                        $path = $request->file($packageName)->store('app_icons/' . $childId, 'public');
                         $iconPath = Storage::disk('public')->url($path);
+                    }
+                    // 🔥 هنا قفلة الأمان: لو كل الشروط اللي فوق فشلت والتابلت مبعتش ملف، اسحب الأيقونة الحقيقية طيران
+                    else {
+                        $iconPath = "https://logos.unbxd.io/packages/{$packageName}/icon.png";
                     }
 
                     ChildApp::updateOrCreate(

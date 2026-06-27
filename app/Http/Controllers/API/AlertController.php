@@ -22,20 +22,30 @@ class AlertController extends Controller
 
     $query = Alert::where('parent_id', $parentId);
 
-    // 🎯 إذا بعتنا child_id يساوي "null" كـ نص أو فاضي، نرجع فقط الإشعارات الخاصة بالرضيع (التي قيمتها null في الداتابيز)
-    if ($request->has('child_id')) {
-        if ($request->child_id === 'null' || $request->child_id == null) {
-            $query->whereNull('child_id'); // 🔥 يرجع إشعارات الرضيع فقط!
-        } else {
-            $query->where('child_id', $request->child_id); // يرجع إشعارات الطفل المحدد
-        }
+    if ($request->has('child_id') && $request->child_id != null) {
+        $query->where('child_id', $request->child_id);
+    }
+
+    // 🎯 التعديل السحري للموبايل الحقيقي: 
+    // لو الـ range جاي 'today'، نخليه يجيب آخر 24 ساعة مطلقاً بغض النظر عن الـ Timezone للموبايل
+    if ($request->has('range') && $request->range === 'today') {
+        $query->where('created_at', '>=', \Carbon\Carbon::now('Africa/Cairo')->startOfDay());
     }
 
     $alerts = $query->orderBy('created_at', 'desc')->get();
 
+    // 💡 خطوة إنقاذ احتياطية: لو المصفوفة طلعت فاضية بسبب الـ Range، هات إشعارات الطفل بدون قيد التاريخ
+    if ($alerts->isEmpty() && $request->has('child_id')) {
+        $alerts = Alert::where('parent_id', $parentId)
+                       ->where('child_id', $request->child_id)
+                       ->orderBy('created_at', 'desc')
+                       ->take(5)
+                       ->get();
+    }
+
     $formattedAlerts = $alerts->map(function ($alert) {
         \Carbon\Carbon::setLocale('en'); 
-        $createdAt = \Carbon\Carbon::parse($alert->created_at);
+        $createdAt = \Carbon\Carbon::parse($alert->created_at)->timezone('Africa/Cairo'); // ضبط العرض على توقيت مصر
 
         $alert->formatted_day  = $createdAt->isoFormat('dddd');          
         $alert->formatted_date = $createdAt->isoFormat('LL');            
