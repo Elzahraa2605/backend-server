@@ -67,25 +67,25 @@ class AlertController extends Controller
 
     $childId = $request->child_id;
 
-    // تنظيف الـ ID لو جاي معاه نصوص
+    // تنظيف الـ ID لو جاي معاه نصوص أو مسافات
     if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
         $childId = (int) $matches[0];
     }
 
     $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
     
-    // 🔥 التعديل: نبحث بالـ ID المبعوث فقط.. ولو ملقيناش طفل، نجيب أول طفل بشرط يكون مش جهاز الرضيع
+    // 🎯 محاولة جلب الطفل بالـ ID المبعوث فعلياً
     $child = DB::table($tableName)->where('id', $childId)->first();
 
+    // 💡 خطوة الإنقاذ الذكية: لو الـ ID مش مقروء، اربط التنبيه بأحدث طفل مسجل في الداتابيز (الطفل الجديد) بدلاً من رقم 1
     if (!$child) {
-        // لو مفيش ID واضح، بنجيب أول طفل حقيقي (مش الرضيع اللي آيديه 1) منعاً للتداخل
-        $child = DB::table($tableName)->where('id', $childId)->first() ?? DB::table($tableName)->first();
+        $child = DB::table($tableName)->orderBy('id', 'desc')->first();
     }
 
     if (!$child) {
         return response()->json(['error' => 'No children found in database'], 404);
     }
-
+    
     $title = $request->title;
     $message = $request->message;
 
