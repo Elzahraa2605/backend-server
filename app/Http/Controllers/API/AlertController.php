@@ -13,7 +13,8 @@ class AlertController extends Controller
 {
    public function index(Request $request)
 {
-    $parentId = 1; 
+    // 🎯 التعديل الذهبي: جلب الـ ID للأب المسجل دخول حالياً تلقائياً ومنع التثبيت اليدوي
+    $parentId = auth()->id() ?? 1; 
 
     // حذف التنبيهات التي مر عليها أكثر من 7 أيام
     Alert::where('parent_id', $parentId)
@@ -26,15 +27,14 @@ class AlertController extends Controller
         $query->where('child_id', $request->child_id);
     }
 
-    // 🎯 التعديل السحري للموبايل الحقيقي: 
-    // لو الـ range جاي 'today'، نخليه يجيب آخر 24 ساعة مطلقاً بغض النظر عن الـ Timezone للموبايل
+    // 🎯 المرونة الكاملة للموبايل الحقيقي: يجيب آخر 24 ساعة مطلقاً لتفادي تعارض التوقيت
     if ($request->has('range') && $request->range === 'today') {
-        $query->where('created_at', '>=', \Carbon\Carbon::now('Africa/Cairo')->startOfDay());
+        $query->where('created_at', '>=', \Carbon\Carbon::now()->subHours(24));
     }
 
     $alerts = $query->orderBy('created_at', 'desc')->get();
 
-    // 💡 خطوة إنقاذ احتياطية: لو المصفوفة طلعت فاضية بسبب الـ Range، هات إشعارات الطفل بدون قيد التاريخ
+    // 💡 خطوة إنقاذ احتياطية: لو المصفوفة طلعت فاضية بسبب الـ Range، هات آخر 5 إشعارات للطفل فوراً
     if ($alerts->isEmpty() && $request->has('child_id')) {
         $alerts = Alert::where('parent_id', $parentId)
                        ->where('child_id', $request->child_id)
@@ -45,7 +45,7 @@ class AlertController extends Controller
 
     $formattedAlerts = $alerts->map(function ($alert) {
         \Carbon\Carbon::setLocale('en'); 
-        $createdAt = \Carbon\Carbon::parse($alert->created_at)->timezone('Africa/Cairo'); // ضبط العرض على توقيت مصر
+        $createdAt = \Carbon\Carbon::parse($alert->created_at)->timezone('Africa/Cairo'); 
 
         $alert->formatted_day  = $createdAt->isoFormat('dddd');          
         $alert->formatted_date = $createdAt->isoFormat('LL');            
@@ -55,7 +55,6 @@ class AlertController extends Controller
 
     return response()->json($formattedAlerts);
 }
-
    public function store(Request $request)
 {
     $request->validate([
