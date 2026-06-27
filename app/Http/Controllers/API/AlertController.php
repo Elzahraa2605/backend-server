@@ -79,7 +79,7 @@ class AlertController extends Controller
 
     if (!$child) {
         // لو مفيش ID واضح، بنجيب أول طفل حقيقي (مش الرضيع اللي آيديه 1) منعاً للتداخل
-        $child = DB::table($tableName)->where('id', '!=', 1)->first() ?? DB::table($tableName)->first();
+        $child = DB::table($tableName)->where('id', $childId)->first() ?? DB::table($tableName)->first();
     }
 
     if (!$child) {
