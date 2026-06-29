@@ -63,38 +63,38 @@ class AlertController extends Controller
 
         $type = $request->type;
         $finalChildId = null;
+        
+        // جلب الأب من التوكن أو الحساب الافتراضي
         $parentId = auth('parent')->id() ?? auth()->id() ?? 1;
 
-        // 👶 1. حماية مسار الرضيع (الهاردوير) - ثابت ومحمي كـ null بنسبة 100%
+        // 👶 1. حماية مسار الرضيع (الهاردوير): يظل null ومستقل 100%
         if ($type === 'crying_detected' || $type === 'Cry') {
             $finalChildId = null;
         } else {
-            // 👦 2. مسار أجهزة الأطفال الكبار (التنبيهات الأمنية والويب):
+            // 👦 2. مسار الأطفال الكبار (الحظر والويب):
             
-            // المحاولة أ: الفحص بالتوكن أولاً
-            $childUser = auth('child')->user();
+            // أولاً: فحص لو الـ child_id مبعوث صراحة في الـ Request (وده الأضمن للـ Emulator)
+            $childId = $request->child_id ?? $request->input('child_id');
             
-            if ($childUser) {
-                $finalChildId = $childUser->id;
-                $parentId = $childUser->parent_id;
+            if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
+                $childId = (int) $matches[0];
+            }
+
+            $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
+            $child = DB::table($tableName)->where('id', $childId)->first();
+
+            if ($child) {
+                $finalChildId = $child->id;
+                $parentId = $child->parent_id;
             } else {
-                // المحاولة ب: لو مفيش توكن، بنقرأ الـ child_id المبعوث صراحة
-                $childId = $request->child_id;
-                if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
-                    $childId = (int) $matches[0];
-                }
-
-                $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
-                $child = DB::table($tableName)->where('id', $childId)->first();
-
-                if ($child) {
-                    $finalChildId = $child->id;
-                    $parentId = $child->parent_id;
+                // ثانياً: لو الـ ID مش مبعوث، فتش بتوكن الطفل
+                $childUser = auth('child')->user();
+                if ($childUser) {
+                    $finalChildId = $childUser->id;
+                    $parentId = $childUser->parent_id;
                 } else {
-                    // 🔥 الحيلة القاضية: لو التابلت مش باعت توكن ولا باعت child_id، بندور في جدول الـ child_apps 
-                    // بناءً على الـ package_name المبعوث أو اسم التطبيق عشان نعرف الجدول ده يخص أنهي طفل!
+                    // ثالثاً: حيلة الفحص بالـ package_name لمنع التداخل
                     $packageName = $request->package_name ?? $request->packageName;
-                    
                     if ($packageName) {
                         $appRecord = DB::table('child_apps')->where('package_name', $packageName)->first();
                         if ($appRecord) {
@@ -103,20 +103,19 @@ class AlertController extends Controller
                             if ($child) { $parentId = $child->parent_id; }
                         }
                     }
-
-                    // لو لسه معرفناش (أول مرة خالص)، بنرميه لأول طفل مربوط بالأب ده بدل الأحدث
-                    if (!$finalChildId) {
-                        $firstChildOfParent = DB::table($tableName)->where('parent_id', $parentId)->first();
-                        $finalChildId = $firstChildOfParent ? $firstChildOfParent->id : null;
-                    }
                 }
+            }
+
+            // 🚨 شبكة الأمان المطلقة: لو كل المحاولات فشلت، اربطه بأول طفل مسجل للأب ده (وليس الأحدث عشوائياً!)
+            if (!$finalChildId) {
+                $firstChildOfParent = DB::table($tableName)->where('parent_id', $parentId)->orderBy('id', 'asc')->first();
+                $finalChildId = $firstChildOfParent ? $firstChildOfParent->id : null;
             }
         }
         
         $title = $request->title;
         $message = $request->message;
 
-        // تأمين وتوحيد العناوين والرسائل
         if ($type === 'threat_blocked' || str_contains($title, 'حظر') || str_contains($title, 'blocked')) {
             $title = "Threat Blocked";
             $message = "Security system prevented downloading a suspicious file on child device. Reason: Flagged as malware.";
@@ -137,7 +136,7 @@ class AlertController extends Controller
 
         return response()->json($alert, 201);
     }
-    
+
     public function markRead(string $uuid)
     {
         $alert = Alert::where('uuid', $uuid)->firstOrFail();
