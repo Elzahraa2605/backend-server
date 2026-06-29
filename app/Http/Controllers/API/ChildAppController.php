@@ -67,9 +67,9 @@ class ChildAppController extends Controller
                     }
 
                     // 2️⃣ ثانياً (حيلة الإنقاذ): لو التابلت مرفعش ملف وباعت رابط خارجي مكسور أو فاضي، نتدخل فوراً
+                    // 🎯 الأمان المطلق: لو التابلت مرفعش ملف، السيرفر هيقرأ الصورة الملونة من سيرفرك إنتِ شخصياً على نفس الـ IP
                     if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        // رابط بديل ومستقر لأيقونات متجر جوجل بلاي الحقيقية
-                        $iconPath = "https://play-lh.googleusercontent.com/avatar/{$packageName}";
+                        $iconPath = 'http://16.171.208.58/storage/default_icon.png';
                     }
 
                     // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات بأمان
