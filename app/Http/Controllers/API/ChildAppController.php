@@ -66,14 +66,21 @@ class ChildAppController extends Controller
                         $iconPath = 'http://16.171.208.58/storage/' . $path;
                     }
 
-                    // 2️⃣ ثانياً (الإنقاذ الديناميكي): لو مفيش ملف مرفوع، السيرفر هيولد رابط الأيقونة الأصلية والملونة أوتوماتيك بناءً على اسم الحزمة
-                    // 2️⃣ ثانياً (الإنقاذ الديناميكي الجديد): جلب الأيقونة الملونة الأصلية من سيرفر مفتوح ومجاني 100%
+                    // 2️⃣ ثانياً (الحل النهائي القاطع): توليد أيقونة ملونة مبهجة مخففة وبدون بروتوكول حظر SSL
                     if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        // الـ API ده مجاني تماماً وبيرجع أيقونة التطبيق الأصلية من جوجل بلاي بمجرد تمرير الـ package_name
-                        $iconPath = "https://logos.unbxd.io/packages/{$packageName}/icon.png";
+                        $appName = $app['app_name'] ?? 'App';
+                        $firstLetter = strtoupper(substr($appName, 0, 1)); // الحرف الأول من اسم التطبيق
+                        
+                        // باليتة ألوان مبهجة ومختلفة لكل تطبيق
+                        $colors = ['2196F3', '4CAF50', 'FF9800', 'E91E63', '9C27B0', '00BCD4', '3F51B5', 'FF5722'];
+                        $colorIndex = abs(crc32($packageName)) % count($colors);
+                        $randomColor = $colors[$colorIndex];
+
+                        // 🎯 تم تعديل الرابط ليكون مفتوحاً ومقبولاً من التليفون الحقيقي والإيموليتر فوراً
+                        $iconPath = "http://dev-images.com/api/?name={$firstLetter}&background={$randomColor}&color=fff&size=128&bold=true";
                     }
 
-                    // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات
+                    // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات بأمان
                     ChildApp::updateOrCreate(
                         [
                             'child_id' => $childId,
