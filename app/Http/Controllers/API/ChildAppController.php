@@ -67,9 +67,10 @@ class ChildAppController extends Controller
                     }
 
                     // 2️⃣ ثانياً (الإنقاذ الديناميكي): لو مفيش ملف مرفوع، السيرفر هيولد رابط الأيقونة الأصلية والملونة أوتوماتيك بناءً على اسم الحزمة
+                    // 2️⃣ ثانياً (الإنقاذ الديناميكي الجديد): جلب الأيقونة الملونة الأصلية من سيرفر مفتوح ومجاني 100%
                     if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        // 🎯 الـ API السحري والمستقر لجلب أيقونات الأندرويد الحقيقية بالملي
-                        $iconPath = "https://api.screenshotone.com/icon?url=https://play.google.com/store/apps/details?id={$packageName}&width=128&height=128";
+                        // الـ API ده مجاني تماماً وبيرجع أيقونة التطبيق الأصلية من جوجل بلاي بمجرد تمرير الـ package_name
+                        $iconPath = "https://logos.unbxd.io/packages/{$packageName}/icon.png";
                     }
 
                     // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات
