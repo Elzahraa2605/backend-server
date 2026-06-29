@@ -61,33 +61,44 @@ class AlertController extends Controller
             'message'  => 'required|string'
         ]);
 
-        // 🎯 تحديد الأب (إذا كان الطلب جاي من توكن أو نخليه 1 افتراضي للهاردوير)
-        $parentId = auth('parent')->id() ?? auth()->id() ?? 1;
         $type = $request->type;
         $finalChildId = null;
+        
+        // 🎯 جلب الأب الحالي تلقائياً من التوكن كقيمة افتراضية
+        $parentId = auth('parent')->id() ?? auth()->id() ?? 1;
 
-        // 👶 حماية مسار الرضيع (الهاردوير):
+        // 👶 1. حماية مسار الرضيع (الهاردوير):
         if ($type === 'crying_detected' || $type === 'Cry') {
             // إذا كان بكاء، يُجبر الـ child_id يكون null ليروح لغرفة الرضيع مباشرة
             $finalChildId = null;
         } else {
-            // 👦 مسار تابلت الأطفال الكبار (التنبيهات الأمنية):
-            $childId = $request->child_id;
-            if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
-                $childId = (int) $matches[0];
-            }
+            // 👦 2. مسار تابلت الأطفال الكبار (التنبيهات الأمنية والويب):
+            
+            // 🔥 الحل القاطع: نحاول نجيب الطفل المصادق عليه أولاً من التوكن (الأضمن والأقوى)
+            $childUser = auth('child')->user();
+            
+            if ($childUser) {
+                // لو الطلب جاي وتوكن الطفل شغال، بناخد بياناته فوراً ومستحيل يحصل تداخل
+                $finalChildId = $childUser->id;
+                $parentId = $childUser->parent_id;
+            } else {
+                // لو مش جاي بتوكن طفل (زي طلبات داخلية أو اختبارات)، بنقرا الـ child_id المبعوث في الـ Body
+                $childId = $request->child_id;
+                if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
+                    $childId = (int) $matches[0];
+                }
 
-            $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
-            $child = DB::table($tableName)->where('id', $childId)->first();
+                $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
+                $child = DB::table($tableName)->where('id', $childId)->first();
 
-            // لو الآيدي تائه أو مش مقروء من التابلت، نربطه بأحدث طفل مسجل (الكبير الحقيقي lll)
-            if (!$child) {
-                $child = DB::table($tableName)->orderBy('id', 'desc')->first();
-            }
-
-            if ($child) {
-                $finalChildId = $child->id;
-                $parentId = $child->parent_id; // تحديث الأب ليكون الأب الفعلي للطفل
+                if ($child) {
+                    $finalChildId = $child->id;
+                    $parentId = $child->parent_id;
+                } else {
+                    // 🚨 لو مفيش توكن والـ child_id تائه، ارميه لأول طفل مربوط بالأب ده بدل ما ترميه لأحدث طفل عشوائي
+                    $firstChildOfParent = DB::table($tableName)->where('parent_id', $parentId)->first();
+                    $finalChildId = $firstChildOfParent ? $firstChildOfParent->id : null;
+                }
             }
         }
         
@@ -105,7 +116,7 @@ class AlertController extends Controller
 
         $alert = Alert::create([
             'parent_id'         => $parentId,
-            'child_id'          => $finalChildId, // هينزل null للبكاء، وبرقم الطفل الحقيقي للحظر
+            'child_id'          => $finalChildId, // هينزل برقم الطفل الفعلي اللي عمل الأكشن
             'type'              => $type,
             'title'             => $title,
             'message'           => $message,
