@@ -52,7 +52,7 @@ class ChildAppController extends Controller
                     $fileKeyByIndex = 'icon_' . $index;
 
                 
-                    // 1️⃣ أولاً: التحقق مما إذا كان التابلت قد رفع ملف صورة حقيقي وخزنه برابط السيرفر
+                    // 1️⃣ أولاً: لو التابلت رفع ملف حقيقي، استخدمه فوراً
                     if ($request->hasFile($fileKeyByPackage)) {
                         $path = $request->file($fileKeyByPackage)->store('app_icons/' . $childId, 'public');
                         $iconPath = 'http://16.171.208.58/storage/' . $path; 
@@ -66,13 +66,13 @@ class ChildAppController extends Controller
                         $iconPath = 'http://16.171.208.58/storage/' . $path;
                     }
 
-                    // 2️⃣ ثانياً (حيلة الإنقاذ): لو التابلت مرفعش ملف وباعت رابط خارجي مكسور أو فاضي، نتدخل فوراً
-                    // 🎯 الأمان المطلق: لو التابلت مرفعش ملف، السيرفر هيقرأ الصورة الملونة من سيرفرك إنتِ شخصياً على نفس الـ IP
+                    // 2️⃣ ثانياً (الإنقاذ الديناميكي): لو مفيش ملف مرفوع، السيرفر هيولد رابط الأيقونة الأصلية والملونة أوتوماتيك بناءً على اسم الحزمة
                     if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        $iconPath = 'http://16.171.208.58/storage/default_icon.png';
+                        // 🎯 الـ API السحري والمستقر لجلب أيقونات الأندرويد الحقيقية بالملي
+                        $iconPath = "https://api.screenshotone.com/icon?url=https://play.google.com/store/apps/details?id={$packageName}&width=128&height=128";
                     }
 
-                    // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات بأمان
+                    // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات
                     ChildApp::updateOrCreate(
                         [
                             'child_id' => $childId,
