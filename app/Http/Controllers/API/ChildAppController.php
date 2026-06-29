@@ -52,38 +52,30 @@ class ChildAppController extends Controller
                     $fileKeyByIndex = 'icon_' . $index;
 
                 
-                    // 1️⃣ أولاً: لو التابلت رفع ملف حقيقي، استخدمه فوراً
                     if ($request->hasFile($fileKeyByPackage)) {
                         $path = $request->file($fileKeyByPackage)->store('app_icons/' . $childId, 'public');
-                        $iconPath = 'http://16.171.208.58/storage/' . $path; 
+                        // التعديل: توليد رابط مطلق متوافق مع بورت التشغيل الفعلي
+                        $iconPath = Storage::disk('public')->url($path); 
                     } 
                     elseif ($request->hasFile($fileKeyByIndex)) {
                         $path = $request->file($fileKeyByIndex)->store('app_icons/' . $childId, 'public');
-                        $iconPath = 'http://16.171.208.58/storage/' . $path;
+                        $iconPath = Storage::disk('public')->url($path);
                     }
                     elseif ($request->hasFile($packageName)) {
-                        $path = $request->file($packageName)->store('app_icons/' . $childId, 'public');
-                        $iconPath = 'http://16.171.208.58/storage/' . $path;
+                        $path = $request->file($packageName)->store('app_icons/' . $childId, $disk);
+                        $iconPath = Storage::disk('public')->url($path);
                     }
 
-                    // 2️⃣ ثانياً (الحل النهائي القاطع): توليد أيقونة ملونة مبهجة مخففة وبدون بروتوكول حظر SSL
-                    // 2️⃣ ثانياً (الإنقاذ القاطع بالأيقونات الملونة بامتداد PNG صريح):
-                    if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        // باليتة ألوان مبهجة ومختلفة لكل تطبيق بناءً على اسم الحزمة
-                        $colorIndex = abs(crc32($packageName)) % 6;
-                        
-                        // مصفوفة من أيقونات أندرويد الملونة الحقيقية بصيغة PNG صريحة ومباشرة 100%
-                        $appLogos = [
-                            0 => 'https://cdn-icons-png.flaticon.com/512/888/888857.png', // أيقونة خضراء
-                            1 => 'https://cdn-icons-png.flaticon.com/512/888/888846.png', // أيقونة زرقاء
-                            2 => 'https://cdn-icons-png.flaticon.com/512/5123/5123653.png', // أيقونة برتقالي
-                            3 => 'https://cdn-icons-png.flaticon.com/512/226/226770.png',  // أيقونة جافا ملونة
-                            4 => 'https://cdn-icons-png.flaticon.com/512/341/341400.png',  // أيقونة تكنولوجية
-                            5 => 'https://cdn-icons-png.flaticon.com/512/1126/1126012.png'  // أيقونة جرافيكس ملونة
-                        ];
-
-                        $iconPath = $appLogos[$colorIndex];
-                    }
+                    ChildApp::updateOrCreate(
+                        [
+                            'child_id' => $childId,
+                            'package_name' => $packageName
+                        ],
+                        [
+                            'app_name' => $app['app_name'],
+                            'app_icon' => $iconPath 
+                        ]
+                    );
                 }
             });
 
