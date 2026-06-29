@@ -68,7 +68,8 @@ class ChildAppController extends Controller
 
                     // 2️⃣ ثانياً (حيلة الإنقاذ): لو التابلت مرفعش ملف وباعت رابط خارجي مكسور أو فاضي، نتدخل فوراً
                     if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        $iconPath = 'https://cdn-icons-png.flaticon.com/512/5123/5123653.png';
+                        // رابط بديل ومستقر لأيقونات متجر جوجل بلاي الحقيقية
+                        $iconPath = "https://play-lh.googleusercontent.com/avatar/{$packageName}";
                     }
 
                     // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات بأمان
