@@ -67,30 +67,23 @@ class ChildAppController extends Controller
                     }
 
                     // 2️⃣ ثانياً (الحل النهائي القاطع): توليد أيقونة ملونة مبهجة مخففة وبدون بروتوكول حظر SSL
+                    // 2️⃣ ثانياً (الإنقاذ القاطع بالأيقونات الملونة بامتداد PNG صريح):
                     if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
-                        $appName = $app['app_name'] ?? 'App';
-                        $firstLetter = strtoupper(substr($appName, 0, 1)); // الحرف الأول من اسم التطبيق
+                        // باليتة ألوان مبهجة ومختلفة لكل تطبيق بناءً على اسم الحزمة
+                        $colorIndex = abs(crc32($packageName)) % 6;
                         
-                        // باليتة ألوان مبهجة ومختلفة لكل تطبيق
-                        $colors = ['2196F3', '4CAF50', 'FF9800', 'E91E63', '9C27B0', '00BCD4', '3F51B5', 'FF5722'];
-                        $colorIndex = abs(crc32($packageName)) % count($colors);
-                        $randomColor = $colors[$colorIndex];
+                        // مصفوفة من أيقونات أندرويد الملونة الحقيقية بصيغة PNG صريحة ومباشرة 100%
+                        $appLogos = [
+                            0 => 'https://cdn-icons-png.flaticon.com/512/888/888857.png', // أيقونة خضراء
+                            1 => 'https://cdn-icons-png.flaticon.com/512/888/888846.png', // أيقونة زرقاء
+                            2 => 'https://cdn-icons-png.flaticon.com/512/5123/5123653.png', // أيقونة برتقالي
+                            3 => 'https://cdn-icons-png.flaticon.com/512/226/226770.png',  // أيقونة جافا ملونة
+                            4 => 'https://cdn-icons-png.flaticon.com/512/341/341400.png',  // أيقونة تكنولوجية
+                            5 => 'https://cdn-icons-png.flaticon.com/512/1126/1126012.png'  // أيقونة جرافيكس ملونة
+                        ];
 
-                        // 🎯 تم تعديل الرابط ليكون مفتوحاً ومقبولاً من التليفون الحقيقي والإيموليتر فوراً
-                        $iconPath = "http://dev-images.com/api/?name={$firstLetter}&background={$randomColor}&color=fff&size=128&bold=true";
+                        $iconPath = $appLogos[$colorIndex];
                     }
-
-                    // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات بأمان
-                    ChildApp::updateOrCreate(
-                        [
-                            'child_id' => $childId,
-                            'package_name' => $packageName
-                        ],
-                        [
-                            'app_name' => $app['app_name'],
-                            'app_icon' => $iconPath 
-                        ]
-                    );
                 }
             });
 
