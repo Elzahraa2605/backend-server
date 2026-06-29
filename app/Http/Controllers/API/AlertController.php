@@ -63,26 +63,22 @@ class AlertController extends Controller
 
         $type = $request->type;
         $finalChildId = null;
-        
-        // 🎯 جلب الأب الحالي تلقائياً من التوكن كقيمة افتراضية
         $parentId = auth('parent')->id() ?? auth()->id() ?? 1;
 
-        // 👶 1. حماية مسار الرضيع (الهاردوير):
+        // 👶 1. حماية مسار الرضيع (الهاردوير) - ثابت ومحمي كـ null بنسبة 100%
         if ($type === 'crying_detected' || $type === 'Cry') {
-            // إذا كان بكاء، يُجبر الـ child_id يكون null ليروح لغرفة الرضيع مباشرة
             $finalChildId = null;
         } else {
-            // 👦 2. مسار تابلت الأطفال الكبار (التنبيهات الأمنية والويب):
+            // 👦 2. مسار أجهزة الأطفال الكبار (التنبيهات الأمنية والويب):
             
-            // 🔥 الحل القاطع: نحاول نجيب الطفل المصادق عليه أولاً من التوكن (الأضمن والأقوى)
+            // المحاولة أ: الفحص بالتوكن أولاً
             $childUser = auth('child')->user();
             
             if ($childUser) {
-                // لو الطلب جاي وتوكن الطفل شغال، بناخد بياناته فوراً ومستحيل يحصل تداخل
                 $finalChildId = $childUser->id;
                 $parentId = $childUser->parent_id;
             } else {
-                // لو مش جاي بتوكن طفل (زي طلبات داخلية أو اختبارات)، بنقرا الـ child_id المبعوث في الـ Body
+                // المحاولة ب: لو مفيش توكن، بنقرأ الـ child_id المبعوث صراحة
                 $childId = $request->child_id;
                 if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
                     $childId = (int) $matches[0];
@@ -95,9 +91,24 @@ class AlertController extends Controller
                     $finalChildId = $child->id;
                     $parentId = $child->parent_id;
                 } else {
-                    // 🚨 لو مفيش توكن والـ child_id تائه، ارميه لأول طفل مربوط بالأب ده بدل ما ترميه لأحدث طفل عشوائي
-                    $firstChildOfParent = DB::table($tableName)->where('parent_id', $parentId)->first();
-                    $finalChildId = $firstChildOfParent ? $firstChildOfParent->id : null;
+                    // 🔥 الحيلة القاضية: لو التابلت مش باعت توكن ولا باعت child_id، بندور في جدول الـ child_apps 
+                    // بناءً على الـ package_name المبعوث أو اسم التطبيق عشان نعرف الجدول ده يخص أنهي طفل!
+                    $packageName = $request->package_name ?? $request->packageName;
+                    
+                    if ($packageName) {
+                        $appRecord = DB::table('child_apps')->where('package_name', $packageName)->first();
+                        if ($appRecord) {
+                            $finalChildId = $appRecord->child_id;
+                            $child = DB::table($tableName)->where('id', $finalChildId)->first();
+                            if ($child) { $parentId = $child->parent_id; }
+                        }
+                    }
+
+                    // لو لسه معرفناش (أول مرة خالص)، بنرميه لأول طفل مربوط بالأب ده بدل الأحدث
+                    if (!$finalChildId) {
+                        $firstChildOfParent = DB::table($tableName)->where('parent_id', $parentId)->first();
+                        $finalChildId = $firstChildOfParent ? $firstChildOfParent->id : null;
+                    }
                 }
             }
         }
@@ -116,7 +127,7 @@ class AlertController extends Controller
 
         $alert = Alert::create([
             'parent_id'         => $parentId,
-            'child_id'          => $finalChildId, // هينزل برقم الطفل الفعلي اللي عمل الأكشن
+            'child_id'          => $finalChildId, 
             'type'              => $type,
             'title'             => $title,
             'message'           => $message,
@@ -126,7 +137,7 @@ class AlertController extends Controller
 
         return response()->json($alert, 201);
     }
-
+    
     public function markRead(string $uuid)
     {
         $alert = Alert::where('uuid', $uuid)->firstOrFail();
