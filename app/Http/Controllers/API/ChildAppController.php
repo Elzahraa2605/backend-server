@@ -52,20 +52,26 @@ class ChildAppController extends Controller
                     $fileKeyByIndex = 'icon_' . $index;
 
                 
+                    // 1️⃣ أولاً: التحقق مما إذا كان التابلت قد رفع ملف صورة حقيقي وخزنه برابط السيرفر
                     if ($request->hasFile($fileKeyByPackage)) {
                         $path = $request->file($fileKeyByPackage)->store('app_icons/' . $childId, 'public');
-                        // التعديل: توليد رابط مطلق متوافق مع بورت التشغيل الفعلي
-                        $iconPath = Storage::disk('public')->url($path); 
+                        $iconPath = 'http://16.171.208.58/storage/' . $path; 
                     } 
                     elseif ($request->hasFile($fileKeyByIndex)) {
                         $path = $request->file($fileKeyByIndex)->store('app_icons/' . $childId, 'public');
-                        $iconPath = Storage::disk('public')->url($path);
+                        $iconPath = 'http://16.171.208.58/storage/' . $path;
                     }
                     elseif ($request->hasFile($packageName)) {
-                        $path = $request->file($packageName)->store('app_icons/' . $childId, $disk);
-                        $iconPath = Storage::disk('public')->url($path);
+                        $path = $request->file($packageName)->store('app_icons/' . $childId, 'public');
+                        $iconPath = 'http://16.171.208.58/storage/' . $path;
                     }
 
+                    // 2️⃣ ثانياً (حيلة الإنقاذ): لو التابلت مرفعش ملف وباعت رابط خارجي مكسور أو فاضي، نتدخل فوراً
+                    if (empty($iconPath) || !str_contains($iconPath, '16.171.208.58')) {
+                        $iconPath = 'https://cdn-icons-png.flaticon.com/512/5123/5123653.png';
+                    }
+
+                    // 3️⃣ ثالثاً: حفظ أو تحديث السجل في قاعدة البيانات بأمان
                     ChildApp::updateOrCreate(
                         [
                             'child_id' => $childId,
