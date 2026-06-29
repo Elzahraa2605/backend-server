@@ -63,37 +63,45 @@ class AlertController extends Controller
 
         $type = $request->type;
         $finalChildId = null;
-        
-        // جلب الأب من التوكن أو الحساب الافتراضي
         $parentId = auth('parent')->id() ?? auth()->id() ?? 1;
 
-        // 👶 1. حماية مسار الرضيع (الهاردوير): يظل null ومستقل 100%
+        // 👶 1. حماية مسار الرضيع (الهاردوير) - يظل مستقل تماماً كـ null
         if ($type === 'crying_detected' || $type === 'Cry') {
             $finalChildId = null;
         } else {
-            // 👦 2. مسار الأطفال الكبار (الحظر والويب):
+            // 👦 2. مسار أجهزة الأطفال الكبار (الحظر والويب):
             
-            // أولاً: فحص لو الـ child_id مبعوث صراحة في الـ Request (وده الأضمن للـ Emulator)
-            $childId = $request->child_id ?? $request->input('child_id');
+            // خط الدفاع الأول: الفحص من خلال توكن الطفل النشط حالياً (الأقوى والأضمن)
+            $childUser = auth('child')->user();
             
-            if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
-                $childId = (int) $matches[0];
-            }
-
-            $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
-            $child = DB::table($tableName)->where('id', $childId)->first();
-
-            if ($child) {
-                $finalChildId = $child->id;
-                $parentId = $child->parent_id;
+            if ($childUser) {
+                $finalChildId = $childUser->id;
+                $parentId = $childUser->parent_id;
             } else {
-                // ثانياً: لو الـ ID مش مبعوث، فتش بتوكن الطفل
-                $childUser = auth('child')->user();
-                if ($childUser) {
-                    $finalChildId = $childUser->id;
-                    $parentId = $childUser->parent_id;
+                // خط الدفاع الثاني: لو مفيش توكن، بنفحص الـ child_id القادم
+                $childId = $request->child_id ?? $request->input('child_id');
+                if (is_string($childId) && preg_match('/\d+/', $childId, $matches)) {
+                    $childId = (int) $matches[0];
+                }
+
+                $tableName = Schema::hasTable('childrens') ? 'childrens' : 'children';
+                
+                // 🎯 حيلة الإنقاذ: لو جهاز الأندرويد باعت اسم الطفل جوه الـ message أو الـ title (مثلاً: "نون حاول الدخول")
+                // بنقش السيرفر ونخليه يدور على اسم الطفل في قاعدة البيانات فوراً بدل الاعتماد على الـ ID الملخبط
+                $child = null;
+                if ($request->has('child_name')) {
+                    $child = DB::table($tableName)->where('name', $request->child_name)->first();
+                }
+
+                if (!$child && $childId) {
+                    $child = DB::table($tableName)->where('id', $childId)->first();
+                }
+
+                if ($child) {
+                    $finalChildId = $child->id;
+                    $parentId = $child->parent_id;
                 } else {
-                    // ثالثاً: حيلة الفحص بالـ package_name لمنع التداخل
+                    // فحص احتياطي عن طريق اسم الحزمة
                     $packageName = $request->package_name ?? $request->packageName;
                     if ($packageName) {
                         $appRecord = DB::table('child_apps')->where('package_name', $packageName)->first();
@@ -106,7 +114,7 @@ class AlertController extends Controller
                 }
             }
 
-            // 🚨 شبكة الأمان المطلقة: لو كل المحاولات فشلت، اربطه بأول طفل مسجل للأب ده (وليس الأحدث عشوائياً!)
+            // حماية مطلقة: لو فشل تماماً، يرمي لأول طفل مسجل للأب ده بدلاً من الأحدث
             if (!$finalChildId) {
                 $firstChildOfParent = DB::table($tableName)->where('parent_id', $parentId)->orderBy('id', 'asc')->first();
                 $finalChildId = $firstChildOfParent ? $firstChildOfParent->id : null;
@@ -136,7 +144,6 @@ class AlertController extends Controller
 
         return response()->json($alert, 201);
     }
-
     public function markRead(string $uuid)
     {
         $alert = Alert::where('uuid', $uuid)->firstOrFail();
